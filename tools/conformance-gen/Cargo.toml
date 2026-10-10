@@ -1,0 +1,33 @@
+[package]
+name = "conformance-gen"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Generates the cow-rs signed-order conformance fixture from cowprotocol/services' own production model/signature code, pinned via git dependency. Internal tooling, not published."
+publish = false
+
+[lints]
+workspace = true
+
+# `model` and `app-data` are pulled from a pinned services commit, not path
+# deps into a services checkout — this crate requires no services-side
+# change and no services PR to function. See README.md for the pin and
+# the regeneration procedure.
+[dependencies]
+model = { git = "https://github.com/cowprotocol/services.git", rev = "4eda54b5b42cb89bf69d4c659f589da4481b258e", package = "model" }
+app-data = { git = "https://github.com/cowprotocol/services.git", rev = "4eda54b5b42cb89bf69d4c659f589da4481b258e", package = "app-data" }
+# Pinned independently of this workspace's `alloy-*` versions (1.5.7 /
+# 1.8.3): `model` at the pinned services revision requires
+# alloy-primitives 1.6.1 and alloy-signer-local 2.4.1 (a different major
+# version for the signer crate). Using `.workspace = true` here would
+# pull in cow-rs's own 1.8.3 signer-local, which is a different, type-
+# incompatible major version from what `model::signature::sign` expects.
+alloy-primitives = { version = "1.6.1", default-features = false }
+alloy-signer-local = { version = "2.4.1", default-features = false }
+const-hex = "1.17.0"
+hex-literal = "1.1.0"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = { version = "1.0.117", features = ["raw_value", "unbounded_depth"] }
