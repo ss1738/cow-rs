@@ -66,8 +66,8 @@ producers = [
 name = "services"
 repo = "cowprotocol/services"
 url = "https://github.com/cowprotocol/services"
-sha = "47af30fe6914b3f27f4f3622171d038bcc8e6131"
-why = "Server-side Rust. Settlement-facing OrderUid packing and model::order::OrderData definitions."
+sha = "df6a14b12eab016f1ae939aa5b666658208b0bc0"
+why = "Server-side Rust. Settlement-facing OrderUid packing and model::order::OrderData definitions. This is the commit pinned by the signed-order/EIP-712/UID conformance corpus (tools/conformance-gen and crates/cowprotocol-signing/tests/conformance_corpus_v1.rs)."
 producers = [
     "crates/contracts/src/gpv2_order.rs",
     "crates/model/src/order.rs",
