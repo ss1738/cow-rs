@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "services_sha": "4eda54b5b42cb89bf69d4c659f589da4481b258e",
+  "services_sha": "df6a14b12eab016f1ae939aa5b666658208b0bc0",
   "settlement": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
   "chain_id": 1,
   "signer": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",

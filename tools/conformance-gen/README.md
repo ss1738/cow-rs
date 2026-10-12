@@ -48,31 +48,25 @@ reimplementation anywhere in this generator.
 ## Current pin
 
 ```
-services_sha = 4eda54b5b42cb89bf69d4c659f589da4481b258e
+services_sha = df6a14b12eab016f1ae939aa5b666658208b0bc0
 ```
 
-This is the same commit the existing (earlier, exploratory, 57-case)
-`services/crates/model/tests/conformance_vectors.rs` prototype and its
-`cowprotocol-signing/tests/services_conformance.rs` consumer were already
-built and mutation-tested against, so the pin's public API surface
-(`OrderData.receiver: Option<Address>`, `OrderKind`, `SellTokenSource`,
-`BuyTokenDestination`, `EcdsaSignature::{sign,recover}`) is already
-proven to work with this exact generation approach.
+**Pin updated from the original `4eda54b...`:** that commit's
+own `Cargo.toml` uses a multi-line inline table (`sqlx = { version =
+"0.8", ... }`) that the cargo bundled with this workspace's pinned
+toolchain (rustc 1.91.1, per `.tool-versions`) cannot parse ("newlines
+are unsupported in inline tables"), so that pin fails to build under CI's
+actual toolchain. `df6a14b...` was verified to build cleanly under
+1.91.1 and was substituted for that reason, not for any API-surface
+change.
 
-**Known, verified fact worth flagging for whoever picks the pin for an
-actual PR:** `cowprotocol/services`' `main` has moved since this pin
-(checked live on 2026-10-03, current `main` was
-`f348ef1465e8ba69cff87edf2abb2e2442256c06`, dated 2026-10-02) and
-contains a breaking change relevant to this exact corpus —
-`model::order::OrderData.receiver` changed from `Option<alloy_primitives::Address>`
-to a new `eth_domain_types::Receiver` type (see `services` commit range
-between this pin and current `main`, `crates/model/src/order.rs`). The
-`OrderClass` enum was also removed entirely. Bumping the pin past this
-point will require reworking the receiver-boundary vectors (currently
-`None` / `Some(ZERO)` / `Some(nonzero)`) against the new `Receiver` API
-before the generator will compile — this was discovered, not assumed,
-while preparing this corpus, and is explicitly left as follow-up work
-rather than silently worked around here.
+The fixed pin also let `alloy-primitives`/`alloy-signer-local` move to
+this workspace's own versions (`.workspace = true`) instead of a
+separately pinned 2.x line — an earlier comment here claimed the
+workspace's 1.8.3 signer-local was type-incompatible with
+`model::signature::sign` at this pin; that was re-tested directly and
+found not to hold at `df6a14b...`, so the separate pin was dropped
+rather than left in place on an unverified assumption.
 
 ## Coverage matrix (19 order vectors, 38 signing-scheme checks)
 
@@ -112,8 +106,6 @@ any pin bump.
   fuzzing framework.
 - EIP-1271 smart-contract signatures, on-chain presign, and full
   orderbook acceptance are out of scope.
-- This prototype is local and uncommitted. It has not been submitted as
-  a services PR (none is required — see above) and has not been opened
-  as a cow-rs PR. Milestone 1 completion requires this to actually be
-  committed, reviewed, and accepted upstream in `cow-rs` — that has not
-  happened yet.
+- Milestone 1 is submitted for upstream review in PR #63. The Milestone
+  2 consumer test, source-lock update, CI verification, and final
+  regeneration documentation are intentionally tracked separately.

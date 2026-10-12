@@ -17,16 +17,10 @@ workspace = true
 # change and no services PR to function. See README.md for the pin and
 # the regeneration procedure.
 [dependencies]
-model = { git = "https://github.com/cowprotocol/services.git", rev = "4eda54b5b42cb89bf69d4c659f589da4481b258e", package = "model" }
-app-data = { git = "https://github.com/cowprotocol/services.git", rev = "4eda54b5b42cb89bf69d4c659f589da4481b258e", package = "app-data" }
-# Pinned independently of this workspace's `alloy-*` versions (1.5.7 /
-# 1.8.3): `model` at the pinned services revision requires
-# alloy-primitives 1.6.1 and alloy-signer-local 2.4.1 (a different major
-# version for the signer crate). Using `.workspace = true` here would
-# pull in cow-rs's own 1.8.3 signer-local, which is a different, type-
-# incompatible major version from what `model::signature::sign` expects.
-alloy-primitives = { version = "1.6.1", default-features = false }
-alloy-signer-local = { version = "2.4.1", default-features = false }
+model = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12eab016f1ae939aa5b666658208b0bc0", package = "model" }
+app-data = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12eab016f1ae939aa5b666658208b0bc0", package = "app-data" }
+alloy-primitives.workspace = true
+alloy-signer-local.workspace = true
 const-hex = "1.17.0"
 hex-literal = "1.1.0"
 serde = { version = "1.0.203", features = ["derive"] }

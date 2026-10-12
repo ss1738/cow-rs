@@ -38,7 +38,7 @@ use {
 /// instead of silently comparing mismatched fields.
 const SCHEMA_VERSION: u32 = 1;
 
-const SERVICES_PIN: &str = "4eda54b5b42cb89bf69d4c659f589da4481b258e";
+const SERVICES_PIN: &str = "df6a14b12eab016f1ae939aa5b666658208b0bc0";
 
 // Canonical GPv2Settlement CREATE2 deployment; identical on every CoW chain.
 const SETTLEMENT: Address = address!("9008D19f58AAbD9eD0D60971565AA8510560ab41");
