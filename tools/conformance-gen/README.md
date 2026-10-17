@@ -19,10 +19,11 @@ Additional vectors cover absent, zero and nonzero receivers; amount values of
 1 and `U256::MAX`; and `validTo` values of 1 and `u32::MAX`. Each vector
 includes EIP-712 and EthSign results.
 
-The matrix keeps the token addresses, fee amount, app data, chain ID,
-settlement contract and signer fixed. All orders set `partially_fillable` to
-false. EIP-1271 signatures, presignatures and orderbook acceptance are outside
-the scope of this fixture.
+The matrix keeps the token addresses, app data, chain ID, settlement contract
+and signer fixed. All orders set `partially_fillable` to false. The two amount
+boundary vectors set the sell, buy and fee amounts to the same boundary value.
+EIP-1271 signatures, presignatures and orderbook acceptance are outside the
+scope of this fixture.
 
 The fixture records:
 
