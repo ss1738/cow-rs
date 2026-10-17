@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "conformance_vectors.v1.schema.json",
+  "title": "CoW signed-order conformance vectors v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "services_sha",
+    "settlement",
+    "chain_id",
+    "signer",
+    "order_vector_count",
+    "signing_scheme_check_count",
+    "vectors"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "services_sha": { "$ref": "#/$defs/gitSha" },
+    "settlement": { "$ref": "#/$defs/address" },
+    "chain_id": { "type": "integer", "minimum": 0 },
+    "signer": { "$ref": "#/$defs/address" },
+    "order_vector_count": { "const": 19 },
+    "signing_scheme_check_count": { "const": 38 },
+    "vectors": {
+      "type": "array",
+      "minItems": 19,
+      "maxItems": 19,
+      "items": { "$ref": "#/$defs/vector" }
+    }
+  },
+  "$defs": {
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{40}$"
+    },
+    "bytes32": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["r", "s", "v"],
+      "properties": {
+        "r": { "$ref": "#/$defs/bytes32" },
+        "s": { "$ref": "#/$defs/bytes32" },
+        "v": { "enum": [27, 28] }
+      }
+    },
+    "vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sell_token",
+        "buy_token",
+        "receiver",
+        "sell_amount",
+        "buy_amount",
+        "valid_to",
+        "app_data",
+        "fee_amount",
+        "kind",
+        "partially_fillable",
+        "sell_token_balance",
+        "buy_token_balance",
+        "domain_separator",
+        "hash_struct",
+        "eip712_digest",
+        "ethsign_digest",
+        "eip712_signature",
+        "eip712_recovered_owner",
+        "ethsign_signature",
+        "ethsign_recovered_owner",
+        "uid"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "sell_token": { "$ref": "#/$defs/address" },
+        "buy_token": { "$ref": "#/$defs/address" },
+        "receiver": {
+          "oneOf": [
+            { "$ref": "#/$defs/address" },
+            { "type": "null" }
+          ]
+        },
+        "sell_amount": { "$ref": "#/$defs/decimal" },
+        "buy_amount": { "$ref": "#/$defs/decimal" },
+        "valid_to": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "app_data": { "$ref": "#/$defs/bytes32" },
+        "fee_amount": { "$ref": "#/$defs/decimal" },
+        "kind": { "enum": ["buy", "sell"] },
+        "partially_fillable": { "type": "boolean" },
+        "sell_token_balance": { "enum": ["erc20", "external", "internal"] },
+        "buy_token_balance": { "enum": ["erc20", "internal"] },
+        "domain_separator": { "$ref": "#/$defs/bytes32" },
+        "hash_struct": { "$ref": "#/$defs/bytes32" },
+        "eip712_digest": { "$ref": "#/$defs/bytes32" },
+        "ethsign_digest": { "$ref": "#/$defs/bytes32" },
+        "eip712_signature": { "$ref": "#/$defs/signature" },
+        "eip712_recovered_owner": { "$ref": "#/$defs/address" },
+        "ethsign_signature": { "$ref": "#/$defs/signature" },
+        "ethsign_recovered_owner": { "$ref": "#/$defs/address" },
+        "uid": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{112}$"
+        }
+      }
+    }
+  }
+}

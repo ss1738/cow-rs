@@ -11,7 +11,7 @@
 //!
 //! The EthSign digest is read from `EcdsaSignature::recover(...).message`.
 //!
-//! Run with `cargo run --manifest-path tools/conformance-gen/Cargo.toml`.
+//! Run with `cargo run --locked --manifest-path tools/conformance-gen/Cargo.toml`.
 
 use {
     alloy_primitives::{Address, U256, address, keccak256},
@@ -29,6 +29,7 @@ use {
 /// Increment when the fixture structure or generation rules change.
 const SCHEMA_VERSION: u32 = 1;
 
+// Must match both services dependency revisions in Cargo.toml.
 const SERVICES_PIN: &str = "df6a14b12eab016f1ae939aa5b666658208b0bc0";
 
 // GPv2Settlement address used for these mainnet vectors.
@@ -249,6 +250,9 @@ fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) ->
         .recover(EcdsaSigningScheme::EthSign, domain, &struct_hash)
         .expect("ethsign signature must recover");
 
+    assert_eq!(eip712_recovered.signer, signer.address());
+    assert_eq!(ethsign_recovered.signer, signer.address());
+
     // `recover` returns the digest used for each signing scheme.
     let eip712_digest = eip712_recovered.message;
     let ethsign_digest = ethsign_recovered.message;
@@ -323,7 +327,9 @@ fn main() {
 
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../crates/cowprotocol-signing/tests/fixtures/conformance_vectors.v1.json");
-    fs::write(&path, serde_json::to_string_pretty(&fixture).unwrap()).unwrap();
+    let mut json = serde_json::to_string_pretty(&fixture).unwrap();
+    json.push('\n');
+    fs::write(&path, json).unwrap();
     println!(
         "wrote {} order vectors ({} signing-scheme checks) to {}",
         fixture.order_vector_count,

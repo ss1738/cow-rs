@@ -26,6 +26,13 @@ The fixture records:
 - signatures and recovered owners
 - the order UID
 
+The schema is `conformance_vectors.v1.schema.json`. Amounts are decimal strings,
+addresses and hashes are lowercase hexadecimal strings, and signature `v` is 27
+or 28.
+
+The absent and zero-address receiver cases intentionally produce the same hash,
+signatures and UID because both encode as the zero address in `OrderData`.
+
 ## Regeneration
 
 From the repository root:
@@ -36,6 +43,10 @@ cargo run --locked --manifest-path tools/conformance-gen/Cargo.toml
 
 The generator overwrites the existing fixture. Commit fixture changes with any
 services revision change.
+
+When changing the services revision, update both `rev` entries in `Cargo.toml`
+and `SERVICES_PIN` in `src/main.rs`, regenerate `Cargo.lock` without `--locked`,
+then run the locked command above.
 
 The generator is excluded from the root workspace because its native services
 dependencies do not compile for the workspace's `wasm32-unknown-unknown` CI
