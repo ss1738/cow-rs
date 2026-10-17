@@ -1,24 +1,17 @@
 //! Generates `crates/cowprotocol-signing/tests/fixtures/conformance_vectors.v1.json`
-//! from `cowprotocol/services`' own production `model::order`/`model::signature`
-//! code, pinned via git dependency (see `Cargo.toml`). No services-side
-//! change and no services PR are required for this to work.
+//! from `cowprotocol/services` `model::order` and `model::signature` code at
+//! the revision pinned in `Cargo.toml`.
 //!
-//! Covers the agreed 19-order-vector / 38-signing-scheme-check matrix:
+//! Covers 19 order vectors and 38 signing-scheme checks:
 //! OrderKind (Buy/Sell) x SellTokenSource (Erc20/External/Internal) x
 //! BuyTokenDestination (Erc20/Internal) = 12 base vectors, each checked
 //! under both Eip712 and EthSign, plus 7 boundary vectors (receiver in
 //! {None, zero, nonzero}, amount in {1, U256::MAX}, validTo in {1,
 //! u32::MAX}).
 //!
-//! The EthSign digest comes from `EcdsaSignature::recover(...).message`
-//! — a public field on services' own production `Recovered` struct — not
-//! from an independently hand-rolled EIP-191 wrapper. `recover()` itself
-//! computes that digest via `hashed_signing_message`, which internally
-//! calls the private `hashed_ethsign_message`; routing through `recover`
-//! is the only way to get that exact private-fn-computed value from
-//! outside `model` without reimplementing it.
+//! The EthSign digest is read from `EcdsaSignature::recover(...).message`.
 //!
-//! Run with `cargo run -p conformance-gen` to regenerate the fixture.
+//! Run with `cargo run --manifest-path tools/conformance-gen/Cargo.toml`.
 
 use {
     alloy_primitives::{Address, U256, address, keccak256},
@@ -33,21 +26,16 @@ use {
     std::{fs, path::Path},
 };
 
-/// Bump whenever the vector shape or generation semantics change. The
-/// consumer test asserts this matches, so a schema drift fails loudly
-/// instead of silently comparing mismatched fields.
+/// Increment when the fixture structure or generation rules change.
 const SCHEMA_VERSION: u32 = 1;
 
 const SERVICES_PIN: &str = "df6a14b12eab016f1ae939aa5b666658208b0bc0";
 
-// Canonical GPv2Settlement CREATE2 deployment; identical on every CoW chain.
+// GPv2Settlement address used for these mainnet vectors.
 const SETTLEMENT: Address = address!("9008D19f58AAbD9eD0D60971565AA8510560ab41");
 const CHAIN_ID: u64 = 1;
 
-// Hardhat/Anvil account #0 default private key (well-known test key,
-// also documented as the playground mnemonic's first account in the
-// services repo's own CLAUDE.md). Used only to produce reproducible
-// signature vectors; holds no funds anywhere.
+// Hardhat account 0 test key. Do not use it for funded accounts.
 const TEST_PRIVATE_KEY: [u8; 32] =
     hex_literal::hex!("ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
 
@@ -140,9 +128,7 @@ fn base(id: &'static str) -> Case {
     }
 }
 
-/// Exactly the agreed 19-order-vector matrix. Each entry here becomes 2
-/// signing-scheme checks (Eip712 + EthSign) in the emitted fixture, for
-/// 38 checks total.
+/// Builds 19 order vectors, each checked with Eip712 and EthSign.
 fn cases() -> Vec<Case> {
     let mut cases = Vec::new();
 
@@ -263,9 +249,7 @@ fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) ->
         .recover(EcdsaSigningScheme::EthSign, domain, &struct_hash)
         .expect("ethsign signature must recover");
 
-    // Both digests come from the `Recovered.message` public field, which
-    // `recover()` computed via services' own (private, internally-called)
-    // `hashed_signing_message` — not from a digest we reconstruct by hand.
+    // `recover` returns the digest used for each signing scheme.
     let eip712_digest = eip712_recovered.message;
     let ethsign_digest = ethsign_recovered.message;
 

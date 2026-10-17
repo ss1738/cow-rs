@@ -8,8 +8,8 @@ members = [
     "crates/cowprotocol-signing",
     "crates/cow-sdk-wasm",
     "tools/chain-probe",
-    "tools/conformance-gen",
 ]
+exclude = ["tools/conformance-gen"]
 
 [workspace.package]
 edition = "2024"

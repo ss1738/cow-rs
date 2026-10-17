@@ -1,26 +1,19 @@
 [package]
 name = "conformance-gen"
 version = "0.0.0"
-edition.workspace = true
-rust-version.workspace = true
-license.workspace = true
-authors.workspace = true
-repository.workspace = true
-description = "Generates the cow-rs signed-order conformance fixture from cowprotocol/services' own production model/signature code, pinned via git dependency. Internal tooling, not published."
+edition = "2024"
+rust-version = "1.91"
+license = "GPL-3.0-or-later"
+authors = ["cow-rs contributors"]
+repository = "https://github.com/cowdao-grants/cow-rs"
+description = "Generates signed-order conformance fixtures from a pinned services revision"
 publish = false
 
-[lints]
-workspace = true
-
-# `model` and `app-data` are pulled from a pinned services commit, not path
-# deps into a services checkout — this crate requires no services-side
-# change and no services PR to function. See README.md for the pin and
-# the regeneration procedure.
 [dependencies]
 model = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12eab016f1ae939aa5b666658208b0bc0", package = "model" }
 app-data = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12eab016f1ae939aa5b666658208b0bc0", package = "app-data" }
-alloy-primitives.workspace = true
-alloy-signer-local.workspace = true
+alloy-primitives = "1.7.3"
+alloy-signer-local = "1.8.3"
 const-hex = "1.17.0"
 hex-literal = "1.1.0"
 serde = { version = "1.0.203", features = ["derive"] }
