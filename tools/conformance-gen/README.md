@@ -15,9 +15,14 @@ matrix covers:
 - `SellTokenSource`: Erc20, External and Internal
 - `BuyTokenDestination`: Erc20 and Internal
 
-Additional vectors cover absent, zero and nonzero receivers; minimum and
-maximum amounts; and minimum and maximum `validTo` values. Each vector includes
-EIP-712 and EthSign results.
+Additional vectors cover absent, zero and nonzero receivers; amount values of
+1 and `U256::MAX`; and `validTo` values of 1 and `u32::MAX`. Each vector
+includes EIP-712 and EthSign results.
+
+The matrix keeps the token addresses, fee amount, app data, chain ID,
+settlement contract and signer fixed. All orders set `partially_fillable` to
+false. EIP-1271 signatures, presignatures and orderbook acceptance are outside
+the scope of this fixture.
 
 The fixture records:
 
@@ -40,6 +45,10 @@ From the repository root:
 ```bash
 cargo run --locked --manifest-path tools/conformance-gen/Cargo.toml
 ```
+
+The first build requires Git and network access to fetch the pinned services
+repository and crates.io dependencies. After those dependencies are cached,
+the generator can run offline with `--offline`.
 
 The generator overwrites the existing fixture. Commit fixture changes with any
 services revision change.
