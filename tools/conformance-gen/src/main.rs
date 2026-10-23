@@ -3,13 +3,13 @@
 //! the revision pinned in `Cargo.toml`.
 //!
 //! Covers 19 order vectors and 38 signing-scheme checks:
-//! OrderKind (Buy/Sell) x SellTokenSource (Erc20/External/Internal) x
-//! BuyTokenDestination (Erc20/Internal) = 12 base vectors, each checked
-//! under both Eip712 and EthSign, plus 7 boundary vectors (receiver in
-//! {None, zero, nonzero}, amount in {1, U256::MAX}, validTo in {1,
-//! u32::MAX}).
+//! `OrderKind` (Buy/Sell) x `SellTokenSource` (Erc20/External/Internal) x
+//! `BuyTokenDestination` (Erc20/Internal) = 12 base vectors, each checked
+//! under both Eip712 and `EthSign`, plus 7 boundary vectors (receiver in
+//! {None, zero, nonzero}, amount in {1, `U256::MAX`}, validTo in {1,
+//! `u32::MAX`}).
 //!
-//! The EthSign digest is read from `EcdsaSignature::recover(...).message`.
+//! The `EthSign` digest is read from `EcdsaSignature::recover(...).message`.
 //!
 //! Run with `cargo run --locked --manifest-path tools/conformance-gen/Cargo.toml`.
 
@@ -54,7 +54,7 @@ struct Fixture {
 
 #[derive(Serialize)]
 struct Vector {
-    id: &'static str,
+    id: String,
     sell_token: String,
     buy_token: String,
     receiver: Option<String>,
@@ -63,10 +63,10 @@ struct Vector {
     valid_to: u32,
     app_data: String,
     fee_amount: String,
-    kind: &'static str,
+    kind: OrderKind,
     partially_fillable: bool,
-    sell_token_balance: &'static str,
-    buy_token_balance: &'static str,
+    sell_token_balance: SellTokenSource,
+    buy_token_balance: BuyTokenDestination,
     domain_separator: String,
     hash_struct: String,
     eip712_digest: String,
@@ -86,42 +86,33 @@ struct SigParts {
 }
 
 fn hex32(b: impl AsRef<[u8]>) -> String {
-    format!("0x{}", const_hex::encode(b.as_ref()))
+    alloy_primitives::hex::encode_prefixed(b.as_ref())
 }
 
 fn hex_addr(a: Address) -> String {
-    format!("0x{}", const_hex::encode(a.as_slice()))
+    alloy_primitives::hex::encode_prefixed(a.as_slice())
 }
 
+// `Case` only adds a human-readable `id` on top of the `OrderData` the
+// pinned `model` crate already defines; it does not re-declare `OrderData`'s
+// fields.
 struct Case {
-    id: &'static str,
-    sell_token: Address,
-    buy_token: Address,
-    receiver: Option<Address>,
-    sell_amount: U256,
-    buy_amount: U256,
-    valid_to: u32,
-    app_data: [u8; 32],
-    fee_amount: U256,
-    kind: OrderKind,
-    partially_fillable: bool,
-    sell_token_balance: SellTokenSource,
-    buy_token_balance: BuyTokenDestination,
+    id: String,
+    order: OrderData,
 }
 
-fn base(id: &'static str) -> Case {
-    Case {
-        id,
+fn base_order() -> OrderData {
+    OrderData {
         sell_token: Address::repeat_byte(0x01),
         buy_token: Address::repeat_byte(0x02),
         receiver: Some(Address::repeat_byte(0x03)),
-        sell_amount: U256::from(0x0246ddf97976680000_u128),
-        buy_amount: U256::from(0xb98bc829a6f90000_u128),
+        sell_amount: U256::from(0x0002_46dd_f979_7668_0000_u128),
+        buy_amount: U256::from(0xb98b_c829_a6f9_0000_u128),
         // Deliberately not a boundary value: the validTo boundary vectors
         // below (1, u32::MAX) must stay distinct from every base vector.
         valid_to: 1_893_456_000,
-        app_data: *keccak256(b"cow-rs conformance vector"),
-        fee_amount: U256::from(0x0de0b6b3a7640000_u128),
+        app_data: AppDataHash(*keccak256(b"cow-rs conformance vector")),
+        fee_amount: U256::from(0x0de0_b6b3_a764_0000_u128),
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: SellTokenSource::Erc20,
@@ -129,7 +120,7 @@ fn base(id: &'static str) -> Case {
     }
 }
 
-/// Builds 19 order vectors, each checked with Eip712 and EthSign.
+/// Builds 19 order vectors, each checked with Eip712 and `EthSign`.
 fn cases() -> Vec<Case> {
     let mut cases = Vec::new();
 
@@ -142,31 +133,30 @@ fn cases() -> Vec<Case> {
             SellTokenSource::Internal,
         ] {
             for buy_bal in [BuyTokenDestination::Erc20, BuyTokenDestination::Internal] {
-                let id: &'static str = Box::leak(
-                    format!(
-                        "{}_{}_{}",
-                        match kind {
-                            OrderKind::Sell => "sell",
-                            OrderKind::Buy => "buy",
-                        },
-                        match sell_bal {
-                            SellTokenSource::Erc20 => "sb_erc20",
-                            SellTokenSource::External => "sb_external",
-                            SellTokenSource::Internal => "sb_internal",
-                        },
-                        match buy_bal {
-                            BuyTokenDestination::Erc20 => "bb_erc20",
-                            BuyTokenDestination::Internal => "bb_internal",
-                        },
-                    )
-                    .into_boxed_str(),
+                let id = format!(
+                    "{}_{}_{}",
+                    match kind {
+                        OrderKind::Sell => "sell",
+                        OrderKind::Buy => "buy",
+                    },
+                    match sell_bal {
+                        SellTokenSource::Erc20 => "sb_erc20",
+                        SellTokenSource::External => "sb_external",
+                        SellTokenSource::Internal => "sb_internal",
+                    },
+                    match buy_bal {
+                        BuyTokenDestination::Erc20 => "bb_erc20",
+                        BuyTokenDestination::Internal => "bb_internal",
+                    },
                 );
                 cases.push(Case {
                     id,
-                    kind,
-                    sell_token_balance: sell_bal,
-                    buy_token_balance: buy_bal,
-                    ..base(id)
+                    order: OrderData {
+                        kind,
+                        sell_token_balance: sell_bal,
+                        buy_token_balance: buy_bal,
+                        ..base_order()
+                    },
                 });
             }
         }
@@ -178,11 +168,13 @@ fn cases() -> Vec<Case> {
         ("receiver_zero", Some(Address::ZERO)),
         ("receiver_nonzero", Some(Address::repeat_byte(0x07))),
     ] {
-        let id: &'static str = Box::leak(label.to_string().into_boxed_str());
+        let id = label.to_string();
         cases.push(Case {
             id,
-            receiver,
-            ..base(id)
+            order: OrderData {
+                receiver,
+                ..base_order()
+            },
         });
     }
 
@@ -193,23 +185,27 @@ fn cases() -> Vec<Case> {
         ("amount_one", U256::from(1u8)),
         ("amount_u256_max", U256::MAX),
     ] {
-        let id: &'static str = Box::leak(label.to_string().into_boxed_str());
+        let id = label.to_string();
         cases.push(Case {
             id,
-            sell_amount: amount,
-            buy_amount: amount,
-            fee_amount: amount,
-            ..base(id)
+            order: OrderData {
+                sell_amount: amount,
+                buy_amount: amount,
+                fee_amount: amount,
+                ..base_order()
+            },
         });
     }
 
     // +2 validTo boundary vectors.
     for (label, valid_to) in [("valid_to_one", 1u32), ("valid_to_u32_max", u32::MAX)] {
-        let id: &'static str = Box::leak(label.to_string().into_boxed_str());
+        let id = label.to_string();
         cases.push(Case {
             id,
-            valid_to,
-            ..base(id)
+            order: OrderData {
+                valid_to,
+                ..base_order()
+            },
         });
     }
 
@@ -222,20 +218,7 @@ fn cases() -> Vec<Case> {
 }
 
 fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) -> Vector {
-    let order = OrderData {
-        sell_token: case.sell_token,
-        buy_token: case.buy_token,
-        receiver: case.receiver,
-        sell_amount: case.sell_amount,
-        buy_amount: case.buy_amount,
-        valid_to: case.valid_to,
-        app_data: AppDataHash(case.app_data),
-        fee_amount: case.fee_amount,
-        kind: case.kind,
-        partially_fillable: case.partially_fillable,
-        sell_token_balance: case.sell_token_balance,
-        buy_token_balance: case.buy_token_balance,
-    };
+    let order = case.order;
 
     let struct_hash = order.hash_struct();
 
@@ -261,28 +244,22 @@ fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) ->
 
     Vector {
         id: case.id,
-        sell_token: hex_addr(case.sell_token),
-        buy_token: hex_addr(case.buy_token),
-        receiver: case.receiver.map(hex_addr),
-        sell_amount: case.sell_amount.to_string(),
-        buy_amount: case.buy_amount.to_string(),
-        valid_to: case.valid_to,
-        app_data: hex32(case.app_data),
-        fee_amount: case.fee_amount.to_string(),
-        kind: match case.kind {
-            OrderKind::Sell => "sell",
-            OrderKind::Buy => "buy",
-        },
-        partially_fillable: case.partially_fillable,
-        sell_token_balance: match case.sell_token_balance {
-            SellTokenSource::Erc20 => "erc20",
-            SellTokenSource::External => "external",
-            SellTokenSource::Internal => "internal",
-        },
-        buy_token_balance: match case.buy_token_balance {
-            BuyTokenDestination::Erc20 => "erc20",
-            BuyTokenDestination::Internal => "internal",
-        },
+        sell_token: hex_addr(order.sell_token),
+        buy_token: hex_addr(order.buy_token),
+        receiver: order.receiver.map(hex_addr),
+        sell_amount: order.sell_amount.to_string(),
+        buy_amount: order.buy_amount.to_string(),
+        valid_to: order.valid_to,
+        app_data: hex32(order.app_data.0),
+        fee_amount: order.fee_amount.to_string(),
+        // `OrderKind`, `SellTokenSource` and `BuyTokenDestination` already
+        // derive `Serialize` with the exact casing this fixture needs
+        // (`model::order`'s own `#[serde(rename_all = ...)]`), so `Vector`
+        // holds them directly instead of re-deriving the same strings here.
+        kind: order.kind,
+        partially_fillable: order.partially_fillable,
+        sell_token_balance: order.sell_token_balance,
+        buy_token_balance: order.buy_token_balance,
         domain_separator: hex32(domain.0),
         hash_struct: hex32(struct_hash),
         eip712_digest: hex32(eip712_digest),
@@ -299,7 +276,7 @@ fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) ->
             v: ethsign_sig.v,
         },
         ethsign_recovered_owner: hex_addr(ethsign_recovered.signer),
-        uid: format!("0x{}", const_hex::encode(uid.0)),
+        uid: alloy_primitives::hex::encode_prefixed(uid.0),
     }
 }
 

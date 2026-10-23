@@ -51,16 +51,23 @@ The first build requires Git and network access to fetch the pinned services
 repository and crates.io dependencies. After those dependencies are cached,
 the generator can run offline with `--offline`.
 
-The generator overwrites the existing fixture. Commit fixture changes with any
-services revision change.
+The fixture is generated just-in-time from the services commit pinned in
+`Cargo.toml` and `src/main.rs`; it is **not committed**. `.gitignore` excludes
+`crates/cowprotocol-signing/tests/fixtures/conformance_vectors.v1.json`. Run
+the command above before any test or CI step that reads it, including the
+Milestone 2 consumer test, which is expected to invoke this generator (or a
+CI step that runs before it) rather than read a committed file. Only the
+hand-authored schema, `conformance_vectors.v1.schema.json`, is committed.
 
 When changing the services revision, update both `rev` entries in `Cargo.toml`
 and `SERVICES_PIN` in `src/main.rs`, regenerate `Cargo.lock` without `--locked`,
-then run the locked command above.
+then run the locked command above to produce a fresh fixture locally.
 
 The generator is excluded from the root workspace because its native services
 dependencies do not compile for the workspace's `wasm32-unknown-unknown` CI
-target. Its lockfile also keeps those dependencies out of the root lockfile.
+target, and so that those dependencies never enter the root `Cargo.lock`
+(relevant to the un-committed fixture too: regenerating it never touches the
+root lockfile or dependency graph).
 
 No test consumes this fixture in Milestone 1. The consumer test is planned for
 Milestone 2.

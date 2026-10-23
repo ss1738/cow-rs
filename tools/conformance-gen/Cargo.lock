@@ -994,7 +994,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-signer-local",
  "app-data",
- "const-hex",
  "hex-literal 1.1.0",
  "model",
  "serde",

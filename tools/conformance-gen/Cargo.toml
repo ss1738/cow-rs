@@ -14,7 +14,6 @@ model = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12e
 app-data = { git = "https://github.com/cowprotocol/services.git", rev = "df6a14b12eab016f1ae939aa5b666658208b0bc0", package = "app-data" }
 alloy-primitives = "1.7.3"
 alloy-signer-local = "1.8.3"
-const-hex = "1.17.0"
 hex-literal = "1.1.0"
 serde = { version = "1.0.203", features = ["derive"] }
-serde_json = { version = "1.0.117", features = ["raw_value", "unbounded_depth"] }
+serde_json = "1.0.117"
