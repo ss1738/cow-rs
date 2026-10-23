@@ -1,25 +1,21 @@
-//! Generates `crates/cowprotocol-signing/tests/fixtures/conformance_vectors.v1.json`
-//! from `cowprotocol/services` `model::order` and `model::signature` code at
-//! the revision pinned in `Cargo.toml`.
+//! Generates the signed-order conformance fixture used to check `cow-rs`'s
+//! EIP-712/EthSign hashing and signing against the real implementation in
+//! `cowprotocol/services`, at the commit pinned in `Cargo.toml`.
 //!
-//! Covers 19 order vectors and 38 signing-scheme checks:
-//! `OrderKind` (Buy/Sell) x `SellTokenSource` (Erc20/External/Internal) x
-//! `BuyTokenDestination` (Erc20/Internal) = 12 base vectors, each checked
-//! under both Eip712 and `EthSign`, plus 7 boundary vectors (receiver in
-//! {None, zero, nonzero}, amount in {1, `U256::MAX`}, validTo in {1,
-//! `u32::MAX`}).
-//!
-//! The `EthSign` digest is read from `EcdsaSignature::recover(...).message`.
+//! The fixture covers every combination of order kind, sell-token source and
+//! buy-token destination, plus a handful of edge cases for the receiver,
+//! amount and validTo fields, each signed and recovered under both signing
+//! schemes. See `assert_eq!` in `cases()` for the exact vector count.
 //!
 //! Run with `cargo run --locked --manifest-path tools/conformance-gen/Cargo.toml`.
 
 use {
-    alloy_primitives::{Address, U256, address, keccak256},
+    alloy_primitives::{Address, B256, U256, address, keccak256},
     alloy_signer_local::PrivateKeySigner,
     app_data::AppDataHash,
     model::{
         DomainSeparator,
-        order::{BuyTokenDestination, OrderData, OrderKind, SellTokenSource},
+        order::{BuyTokenDestination, OrderData, OrderKind, OrderUid, SellTokenSource},
         signature::{EcdsaSignature, EcdsaSigningScheme},
     },
     serde::Serialize,
@@ -44,53 +40,31 @@ const TEST_PRIVATE_KEY: [u8; 32] =
 struct Fixture {
     schema_version: u32,
     services_sha: String,
-    settlement: String,
+    settlement: Address,
     chain_id: u64,
-    signer: String,
+    signer: Address,
     order_vector_count: usize,
     signing_scheme_check_count: usize,
     vectors: Vec<Vector>,
 }
 
+// Holds `model::order::OrderData` and `model::signature::EcdsaSignature`
+// directly (both already derive `Serialize` with the casing and encoding
+// this fixture needs) instead of re-declaring their fields as `String`.
 #[derive(Serialize)]
 struct Vector {
     id: String,
-    sell_token: String,
-    buy_token: String,
-    receiver: Option<String>,
-    sell_amount: String,
-    buy_amount: String,
-    valid_to: u32,
-    app_data: String,
-    fee_amount: String,
-    kind: OrderKind,
-    partially_fillable: bool,
-    sell_token_balance: SellTokenSource,
-    buy_token_balance: BuyTokenDestination,
-    domain_separator: String,
-    hash_struct: String,
-    eip712_digest: String,
-    ethsign_digest: String,
-    eip712_signature: SigParts,
-    eip712_recovered_owner: String,
-    ethsign_signature: SigParts,
-    ethsign_recovered_owner: String,
-    uid: String,
-}
-
-#[derive(Serialize)]
-struct SigParts {
-    r: String,
-    s: String,
-    v: u8,
-}
-
-fn hex32(b: impl AsRef<[u8]>) -> String {
-    alloy_primitives::hex::encode_prefixed(b.as_ref())
-}
-
-fn hex_addr(a: Address) -> String {
-    alloy_primitives::hex::encode_prefixed(a.as_slice())
+    #[serde(flatten)]
+    order: OrderData,
+    domain_separator: B256,
+    hash_struct: B256,
+    eip712_digest: B256,
+    ethsign_digest: B256,
+    eip712_signature: EcdsaSignature,
+    eip712_recovered_owner: Address,
+    ethsign_signature: EcdsaSignature,
+    ethsign_recovered_owner: Address,
+    uid: OrderUid,
 }
 
 // `Case` only adds a human-readable `id` on top of the `OrderData` the
@@ -120,7 +94,6 @@ fn base_order() -> OrderData {
     }
 }
 
-/// Builds 19 order vectors, each checked with Eip712 and `EthSign`.
 fn cases() -> Vec<Case> {
     let mut cases = Vec::new();
 
@@ -219,7 +192,6 @@ fn cases() -> Vec<Case> {
 
 fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) -> Vector {
     let order = case.order;
-
     let struct_hash = order.hash_struct();
 
     let eip712_sig = EcdsaSignature::sign(EcdsaSigningScheme::Eip712, domain, &struct_hash, signer);
@@ -236,47 +208,20 @@ fn to_vector(case: Case, signer: &PrivateKeySigner, domain: &DomainSeparator) ->
     assert_eq!(eip712_recovered.signer, signer.address());
     assert_eq!(ethsign_recovered.signer, signer.address());
 
-    // `recover` returns the digest used for each signing scheme.
-    let eip712_digest = eip712_recovered.message;
-    let ethsign_digest = ethsign_recovered.message;
-
     let uid = order.uid(domain, eip712_recovered.signer);
 
     Vector {
         id: case.id,
-        sell_token: hex_addr(order.sell_token),
-        buy_token: hex_addr(order.buy_token),
-        receiver: order.receiver.map(hex_addr),
-        sell_amount: order.sell_amount.to_string(),
-        buy_amount: order.buy_amount.to_string(),
-        valid_to: order.valid_to,
-        app_data: hex32(order.app_data.0),
-        fee_amount: order.fee_amount.to_string(),
-        // `OrderKind`, `SellTokenSource` and `BuyTokenDestination` already
-        // derive `Serialize` with the exact casing this fixture needs
-        // (`model::order`'s own `#[serde(rename_all = ...)]`), so `Vector`
-        // holds them directly instead of re-deriving the same strings here.
-        kind: order.kind,
-        partially_fillable: order.partially_fillable,
-        sell_token_balance: order.sell_token_balance,
-        buy_token_balance: order.buy_token_balance,
-        domain_separator: hex32(domain.0),
-        hash_struct: hex32(struct_hash),
-        eip712_digest: hex32(eip712_digest),
-        ethsign_digest: hex32(ethsign_digest),
-        eip712_signature: SigParts {
-            r: hex32(eip712_sig.r),
-            s: hex32(eip712_sig.s),
-            v: eip712_sig.v,
-        },
-        eip712_recovered_owner: hex_addr(eip712_recovered.signer),
-        ethsign_signature: SigParts {
-            r: hex32(ethsign_sig.r),
-            s: hex32(ethsign_sig.s),
-            v: ethsign_sig.v,
-        },
-        ethsign_recovered_owner: hex_addr(ethsign_recovered.signer),
-        uid: alloy_primitives::hex::encode_prefixed(uid.0),
+        domain_separator: B256::from(domain.0),
+        hash_struct: B256::from(struct_hash),
+        eip712_digest: eip712_recovered.message,
+        ethsign_digest: ethsign_recovered.message,
+        eip712_signature: eip712_sig,
+        eip712_recovered_owner: eip712_recovered.signer,
+        ethsign_signature: ethsign_sig,
+        ethsign_recovered_owner: ethsign_recovered.signer,
+        uid,
+        order,
     }
 }
 
@@ -294,9 +239,9 @@ fn main() {
     let fixture = Fixture {
         schema_version: SCHEMA_VERSION,
         services_sha: SERVICES_PIN.to_string(),
-        settlement: hex_addr(SETTLEMENT),
+        settlement: SETTLEMENT,
         chain_id: CHAIN_ID,
-        signer: hex_addr(signer.address()),
+        signer: signer.address(),
         order_vector_count,
         signing_scheme_check_count,
         vectors,

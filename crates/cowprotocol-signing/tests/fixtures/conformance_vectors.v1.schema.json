@@ -47,33 +47,28 @@
       "pattern": "^(0|[1-9][0-9]*)$",
       "maxLength": 78
     },
-    "signature": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["r", "s", "v"],
-      "properties": {
-        "r": { "$ref": "#/$defs/bytes32" },
-        "s": { "$ref": "#/$defs/bytes32" },
-        "v": { "enum": [27, 28] }
-      }
+    "ecdsaSignature": {
+      "description": "r (32 bytes) + s (32 bytes) + v (1 byte), as model::signature::EcdsaSignature serializes it.",
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{130}$"
     },
     "vector": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "sell_token",
-        "buy_token",
+        "sellToken",
+        "buyToken",
         "receiver",
-        "sell_amount",
-        "buy_amount",
-        "valid_to",
-        "app_data",
-        "fee_amount",
+        "sellAmount",
+        "buyAmount",
+        "validTo",
+        "appData",
+        "feeAmount",
         "kind",
-        "partially_fillable",
-        "sell_token_balance",
-        "buy_token_balance",
+        "partiallyFillable",
+        "sellTokenBalance",
+        "buyTokenBalance",
         "domain_separator",
         "hash_struct",
         "eip712_digest",
@@ -86,34 +81,34 @@
       ],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-        "sell_token": { "$ref": "#/$defs/address" },
-        "buy_token": { "$ref": "#/$defs/address" },
+        "sellToken": { "$ref": "#/$defs/address" },
+        "buyToken": { "$ref": "#/$defs/address" },
         "receiver": {
           "oneOf": [
             { "$ref": "#/$defs/address" },
             { "type": "null" }
           ]
         },
-        "sell_amount": { "$ref": "#/$defs/decimal" },
-        "buy_amount": { "$ref": "#/$defs/decimal" },
-        "valid_to": {
+        "sellAmount": { "$ref": "#/$defs/decimal" },
+        "buyAmount": { "$ref": "#/$defs/decimal" },
+        "validTo": {
           "type": "integer",
           "minimum": 0,
           "maximum": 4294967295
         },
-        "app_data": { "$ref": "#/$defs/bytes32" },
-        "fee_amount": { "$ref": "#/$defs/decimal" },
+        "appData": { "$ref": "#/$defs/bytes32" },
+        "feeAmount": { "$ref": "#/$defs/decimal" },
         "kind": { "enum": ["buy", "sell"] },
-        "partially_fillable": { "type": "boolean" },
-        "sell_token_balance": { "enum": ["erc20", "external", "internal"] },
-        "buy_token_balance": { "enum": ["erc20", "internal"] },
+        "partiallyFillable": { "type": "boolean" },
+        "sellTokenBalance": { "enum": ["erc20", "external", "internal"] },
+        "buyTokenBalance": { "enum": ["erc20", "internal"] },
         "domain_separator": { "$ref": "#/$defs/bytes32" },
         "hash_struct": { "$ref": "#/$defs/bytes32" },
         "eip712_digest": { "$ref": "#/$defs/bytes32" },
         "ethsign_digest": { "$ref": "#/$defs/bytes32" },
-        "eip712_signature": { "$ref": "#/$defs/signature" },
+        "eip712_signature": { "$ref": "#/$defs/ecdsaSignature" },
         "eip712_recovered_owner": { "$ref": "#/$defs/address" },
-        "ethsign_signature": { "$ref": "#/$defs/signature" },
+        "ethsign_signature": { "$ref": "#/$defs/ecdsaSignature" },
         "ethsign_recovered_owner": { "$ref": "#/$defs/address" },
         "uid": {
           "type": "string",

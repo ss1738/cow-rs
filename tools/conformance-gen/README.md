@@ -32,9 +32,15 @@ The fixture records:
 - signatures and recovered owners
 - the order UID
 
-The schema is `conformance_vectors.v1.schema.json`. Amounts are decimal strings,
-addresses and hashes are lowercase hexadecimal strings, and signature `v` is 27
-or 28.
+The schema is `conformance_vectors.v1.schema.json`. Each vector embeds
+`model::order::OrderData` directly (via `#[serde(flatten)]`), so its fields
+(`sellToken`, `buyAmount`, `kind`, ...) use `OrderData`'s own camelCase
+serialization; amounts are decimal strings and addresses are lowercase hex,
+both via `OrderData`'s own `Serialize` impl, not re-derived here. The
+generator's own fields (`domain_separator`, `hash_struct`, the two digests)
+stay snake_case since they aren't part of any existing DTO. Each signature is
+`model::signature::EcdsaSignature`'s own serialization: a single `0x`-prefixed
+65-byte hex string (`r` + `s` + `v`), not a separate `r`/`s`/`v` object.
 
 The absent and zero-address receiver cases intentionally produce the same hash,
 signatures and UID because both encode as the zero address in `OrderData`.
